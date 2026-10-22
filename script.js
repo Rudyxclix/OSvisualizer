@@ -2,18 +2,19 @@ const arrivalInput = document.querySelector("#arrival-time");
 const burstInput = document.querySelector("#burst-time");
 const quantumInput = document.querySelector("#time-quantum");
 const processList = document.querySelector("#process-list");
+const processCount = document.querySelector("#process-count");
 const formMessage = document.querySelector("#form-message");
 const resultsSection = document.querySelector("#results");
 
-const colors = [
-  "#cfe3ff",
-  "#d8f1e5",
-  "#ffe6bf",
-  "#eadfff",
-  "#ffdce5",
-  "#c9edf1",
-  "#f5e4b8",
-  "#dce7c2"
+const processColors = [
+  { color: "#2874f0", tint: "#e8efff" },
+  { color: "#28a75b", tint: "#e5f6eb" },
+  { color: "#873fe0", tint: "#f1eaff" },
+  { color: "#d94f83", tint: "#ffebf1" },
+  { color: "#1499a5", tint: "#e3f6f7" },
+  { color: "#d58824", tint: "#fff3df" },
+  { color: "#668d32", tint: "#eef5e5" },
+  { color: "#526dcc", tint: "#e9edff" }
 ];
 
 let processes = [];
@@ -23,15 +24,44 @@ function showMessage(message) {
   formMessage.textContent = message;
 }
 
+function getProcessColor(id) {
+  const processNumber = Number(id.slice(1));
+  return processColors[(processNumber - 1) % processColors.length];
+}
+
+function setProcessColor(element, id) {
+  const color = getProcessColor(id);
+  element.style.setProperty("--process-color", color.color);
+  element.style.setProperty("--process-tint", color.tint);
+}
+
+function createProcessBadge(id) {
+  const badge = document.createElement("span");
+  badge.className = "process-badge";
+  badge.textContent = id;
+  setProcessColor(badge, id);
+  return badge;
+}
+
 function renderProcessList() {
   processList.replaceChildren();
+  processCount.textContent = `${processes.length} ${processes.length === 1 ? "process" : "processes"}`;
 
   if (processes.length === 0) {
     const row = document.createElement("tr");
     row.className = "empty-row";
     const cell = document.createElement("td");
+    const emptyState = document.createElement("span");
+    const icon = document.createElement("span");
+    const message = document.createElement("span");
     cell.colSpan = 4;
-    cell.textContent = "No processes added yet. Add a process or load the example.";
+    emptyState.className = "empty-state";
+    icon.className = "empty-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "+";
+    message.textContent = "No processes added yet. Add a process or load the example.";
+    emptyState.append(icon, message);
+    cell.append(emptyState);
     row.append(cell);
     processList.append(row);
     return;
@@ -45,16 +75,17 @@ function renderProcessList() {
     const actionCell = document.createElement("td");
     const removeButton = document.createElement("button");
 
-    idCell.textContent = process.id;
+    idCell.append(createProcessBadge(process.id));
     arrivalCell.textContent = process.arrivalTime;
     burstCell.textContent = process.burstTime;
     removeButton.type = "button";
     removeButton.className = "remove-button";
-    removeButton.textContent = "Remove";
+    removeButton.textContent = "×";
     removeButton.setAttribute("aria-label", `Remove ${process.id}`);
     removeButton.addEventListener("click", () => {
       processes = processes.filter((item) => item.id !== process.id);
       renderProcessList();
+      resultsSection.hidden = true;
       showMessage("");
     });
 
@@ -72,6 +103,7 @@ function addProcess(arrivalTime, burstTime) {
   });
   nextProcessNumber += 1;
   renderProcessList();
+  resultsSection.hidden = true;
 }
 
 function getValidTimeValue(input, label, allowZero = false) {
@@ -166,19 +198,27 @@ function generateSchedule(timeQuantum) {
   return { workflow, results };
 }
 
+function formatTime(value) {
+  return Number(value.toFixed(2)).toString();
+}
+
 function renderResults(workflow, results) {
   const resultsBody = document.querySelector("#process-results");
   const workflowBody = document.querySelector("#workflow-results");
   const ganttChart = document.querySelector("#gantt-chart");
+  const ganttLegend = document.querySelector("#gantt-legend");
 
   resultsBody.replaceChildren();
   workflowBody.replaceChildren();
   ganttChart.replaceChildren();
+  ganttLegend.replaceChildren();
 
   results.forEach((process) => {
     const row = document.createElement("tr");
+    const idCell = document.createElement("td");
+    idCell.append(createProcessBadge(process.id));
+    row.append(idCell);
     [
-      process.id,
       process.arrivalTime,
       process.burstTime,
       process.completionTime,
@@ -186,46 +226,89 @@ function renderResults(workflow, results) {
       process.waitingTime
     ].forEach((value) => {
       const cell = document.createElement("td");
-      cell.textContent = value;
+      cell.textContent = formatTime(value);
       row.append(cell);
     });
     resultsBody.append(row);
   });
 
+  const usedProcessIds = [...new Set(
+    workflow.filter((turn) => turn.processId !== "IDLE").map((turn) => turn.processId)
+  )];
+
+  usedProcessIds.forEach((id) => {
+    const legendItem = document.createElement("span");
+    const swatch = document.createElement("span");
+    const label = document.createElement("span");
+    legendItem.className = "legend-item";
+    swatch.className = "legend-swatch";
+    label.textContent = id;
+    setProcessColor(swatch, id);
+    legendItem.append(swatch, label);
+    ganttLegend.append(legendItem);
+  });
+
+  if (workflow.some((turn) => turn.processId === "IDLE")) {
+    const legendItem = document.createElement("span");
+    const swatch = document.createElement("span");
+    const label = document.createElement("span");
+    legendItem.className = "legend-item";
+    swatch.className = "legend-swatch is-idle";
+    label.textContent = "IDLE";
+    legendItem.append(swatch, label);
+    ganttLegend.append(legendItem);
+  }
+
   workflow.forEach((turn, index) => {
     const row = document.createElement("tr");
+    const stepCell = document.createElement("td");
+    const processCell = document.createElement("td");
+    stepCell.textContent = index + 1;
+    if (turn.processId === "IDLE") {
+      const idleBadge = document.createElement("span");
+      idleBadge.className = "process-badge is-idle";
+      idleBadge.textContent = "IDLE";
+      processCell.append(idleBadge);
+    } else {
+      processCell.append(createProcessBadge(turn.processId));
+    }
+
+    row.append(stepCell, processCell);
     [
-      index + 1,
-      turn.processId,
       turn.startTime,
       turn.endTime,
       turn.duration,
       turn.remainingTime
     ].forEach((value) => {
       const cell = document.createElement("td");
-      cell.textContent = value;
+      cell.textContent = typeof value === "number" ? formatTime(value) : value;
       row.append(cell);
     });
     workflowBody.append(row);
 
     const ganttItem = document.createElement("div");
     ganttItem.className = "gantt-item";
-    ganttItem.style.width = `${Math.max(turn.duration * 48, 50)}px`;
+    ganttItem.style.width = `${Math.max(turn.duration * 48, 56)}px`;
 
     const block = document.createElement("div");
     block.className = "gantt-block";
     block.textContent = turn.processId;
-    block.style.backgroundColor = turn.processId === "IDLE"
-      ? "#e8edf3"
-      : colors[results.findIndex((process) => process.id === turn.processId) % colors.length];
+    if (turn.processId === "IDLE") {
+      block.classList.add("is-idle");
+    } else {
+      setProcessColor(block, turn.processId);
+    }
 
     const timeLabels = document.createElement("div");
     timeLabels.className = "gantt-times";
     const startLabel = document.createElement("span");
     const endLabel = document.createElement("span");
-    startLabel.textContent = turn.startTime;
-    endLabel.textContent = turn.endTime;
-    timeLabels.append(startLabel, endLabel);
+    if (index === 0) {
+      startLabel.textContent = formatTime(turn.startTime);
+      timeLabels.append(startLabel);
+    }
+    endLabel.textContent = formatTime(turn.endTime);
+    timeLabels.append(endLabel);
 
     ganttItem.append(block, timeLabels);
     ganttChart.append(ganttItem);
@@ -233,14 +316,21 @@ function renderResults(workflow, results) {
 
   const totalTurnaroundTime = results.reduce((sum, process) => sum + process.turnaroundTime, 0);
   const totalWaitingTime = results.reduce((sum, process) => sum + process.waitingTime, 0);
+  const totalExecutionTime = workflow
+    .filter((turn) => turn.processId !== "IDLE")
+    .reduce((sum, turn) => sum + turn.duration, 0);
+
+  document.querySelector("#total-processes").textContent = results.length;
+  document.querySelector("#total-execution-time").textContent = formatTime(totalExecutionTime);
   document.querySelector("#average-tat").textContent =
-    (totalTurnaroundTime / results.length).toFixed(2);
+    formatTime(totalTurnaroundTime / results.length);
   document.querySelector("#average-wt").textContent =
-    (totalWaitingTime / results.length).toFixed(2);
+    formatTime(totalWaitingTime / results.length);
   resultsSection.hidden = false;
 }
 
-document.querySelector("#add-process").addEventListener("click", () => {
+document.querySelector("#process-form").addEventListener("submit", (event) => {
+  event.preventDefault();
   try {
     const arrivalTime = getValidTimeValue(arrivalInput, "Arrival Time", true);
     const burstTime = getValidTimeValue(burstInput, "Burst Time");
@@ -265,6 +355,7 @@ document.querySelector("#generate-schedule").addEventListener("click", () => {
     renderResults(schedule.workflow, schedule.results);
     showMessage("");
   } catch (error) {
+    resultsSection.hidden = true;
     showMessage(error.message);
   }
 });
@@ -279,7 +370,12 @@ document.querySelector("#load-example").addEventListener("click", () => {
     { arrivalTime: 8, burstTime: 3 }
   ].forEach((process) => addProcess(process.arrivalTime, process.burstTime));
   quantumInput.value = 2;
+  resultsSection.hidden = true;
   showMessage("");
+});
+
+quantumInput.addEventListener("input", () => {
+  resultsSection.hidden = true;
 });
 
 renderProcessList();
