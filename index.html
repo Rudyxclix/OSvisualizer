@@ -3,173 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="An interactive Round Robin CPU scheduling visualizer for operating systems students.">
   <title>Round Robin CPU Scheduling Visualizer</title>
   <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-icon" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none">
-          <rect x="7" y="7" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="12" y="12" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M11 2v4m5-4v4m5-4v4m-10 20v4m5-4v4m5-4v4M2 11h4m-4 5h4m-4 5h4m20-10h4m-4 5h4m-4 5h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span class="brand-copy">
-        <strong>Round Robin CPU Scheduling</strong>
-        <span>Operating Systems - CPU Scheduling</span>
-      </span>
-    </div>
-    <span class="algorithm-badge">ROUND ROBIN</span>
-  </header>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="title">Round Robin CPU Scheduling Visualizer</h1>
+      <p class="subtitle">Operating Systems Practical Activities</p>
+    </header>
 
-  <main class="page-shell">
-    <section class="panel input-panel" aria-labelledby="input-heading">
-      <div class="section-heading">
-        <div>
-          <h1 id="input-heading">Process Input</h1>
-          <p class="section-description">Enter arrival time and burst time for each process. Set a time quantum and generate the schedule.</p>
-        </div>
-        <button class="button button-secondary" id="load-example" type="button">Load Example</button>
+    <!-- Activity Selection Tabs -->
+    <nav class="activity-nav" aria-label="Activity Selection">
+      <button type="button" class="tab-btn active" id="tabAct1">
+        Activity 1: Without Context Switching Overhead
+      </button>
+      <button type="button" class="tab-btn" id="tabAct2">
+        Activity 2: With Context Switching Overhead
+      </button>
+    </nav>
+
+    <!-- Scenario Notice -->
+    <div class="scenario-banner" id="scenarioBanner">
+      <strong>Scenario:</strong> <span id="scenarioText">Smart Municipal Control Centre (No Context Switching Overhead)</span>
+    </div>
+
+    <!-- Error Alert Box -->
+    <div id="errorAlert" class="error-alert" style="display: none;" role="alert"></div>
+
+    <!-- Input Section Card -->
+    <section class="card input-card">
+      <div class="card-header">
+        <h2 class="card-title">Process Configuration</h2>
       </div>
 
-      <form id="process-form" novalidate>
-        <div class="input-grid">
-          <label for="arrival-time">
-            Arrival Time (AT)
-            <input id="arrival-time" type="number" min="0" step="any" placeholder="e.g. 0" inputmode="decimal">
-          </label>
-          <label for="burst-time">
-            Burst Time (BT)
-            <input id="burst-time" type="number" min="0" step="any" placeholder="e.g. 5" inputmode="decimal">
-          </label>
-          <button class="button button-add" id="add-process" type="submit">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            Add Process
-          </button>
-          <label class="quantum-field" for="time-quantum">
-            Time Quantum (TQ)
-            <input id="time-quantum" type="number" min="0" step="any" placeholder="e.g. 2" inputmode="decimal">
-          </label>
-        </div>
-      </form>
+      <!-- Editable Process Table -->
+      <div class="table-container">
+        <table class="data-table" id="inputTable">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Process</th>
+              <th style="width: 45%;">Task Description</th>
+              <th style="width: 20%;">Arrival Time (AT) [ms]</th>
+              <th style="width: 20%;">Burst Time (BT) [ms]</th>
+            </tr>
+          </thead>
+          <tbody id="inputTableBody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
 
-      <div class="input-lower">
-        <div class="process-list">
-          <div class="process-list-heading">
-            <h2>Process List</h2>
-            <span id="process-count" class="count-badge">0 processes</span>
+      <!-- Parameters and Action Buttons -->
+      <div class="control-row">
+        <div class="param-group">
+          <label for="quantumInput">Time Quantum (TQ) [ms]:</label>
+          <input type="number" id="quantumInput" class="text-input" min="1" step="1" value="2">
+        </div>
+
+        <div class="param-group" id="overheadGroup" style="display: none;">
+          <label for="overheadInput">Context Switching Overhead [ms]:</label>
+          <input type="number" id="overheadInput" class="text-input" min="0" step="1" value="1">
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn-secondary" id="loadDefaultBtn">Load Default Data</button>
+          <button type="button" class="btn btn-primary" id="runSimBtn">Run Simulation</button>
+          <button type="button" class="btn btn-primary" id="compareBtn">Compare Time Quantums</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section (hidden until simulation or comparison is run) -->
+    <section id="resultsSection" class="results-wrapper" style="display: none;">
+      <!-- 1. Single Simulation View -->
+      <div id="singleSimulationView">
+        <!-- Gantt Chart Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title" id="singleGanttHeading">Gantt Chart (Time Quantum = 2 ms)</h2>
           </div>
-          <div class="table-wrap">
-            <table class="process-input-table">
+          <div class="gantt-legend" id="singleLegend"></div>
+          <div class="gantt-scroll-container">
+            <div class="gantt-chart" id="singleGanttChart"></div>
+          </div>
+        </div>
+
+        <!-- Summary Metrics Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Performance Summary Metrics</h2>
+          </div>
+          <div class="metrics-grid" id="summaryMetricsContainer">
+            <!-- Populated via script.js -->
+          </div>
+        </div>
+
+        <!-- Detailed Process Results Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Detailed Process Results</h2>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="resultsTable">
               <thead>
                 <tr>
-                  <th scope="col">Process</th>
-                  <th scope="col">Arrival Time (AT)</th>
-                  <th scope="col">Burst Time (BT)</th>
-                  <th scope="col">Action</th>
+                  <th>Process</th>
+                  <th>Task Description</th>
+                  <th>Arrival Time (AT)</th>
+                  <th>Burst Time (BT)</th>
+                  <th>Completion Time (CT)</th>
+                  <th>Turnaround Time (TAT)</th>
+                  <th>Waiting Time (WT)</th>
+                  <th>Response Time (RT)</th>
                 </tr>
               </thead>
-              <tbody id="process-list">
-                <tr class="empty-row">
-                  <td colspan="4">
-                    <span class="empty-state">
-                      <span class="empty-icon" aria-hidden="true">+</span>
-                      <span>No processes added yet. Add a process or load the example.</span>
-                    </span>
-                  </td>
-                </tr>
+              <tbody id="resultsTableBody">
+                <!-- Populated via script.js -->
               </tbody>
             </table>
           </div>
         </div>
-        <div class="form-actions">
-          <p class="message" id="form-message" role="status" aria-live="polite"></p>
-          <button class="button button-primary" id="generate-schedule" type="button">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 9 6-9 6V4Z" fill="currentColor"/></svg>
-            Generate Schedule
-          </button>
+      </div>
+
+      <!-- 2. Comparison View -->
+      <div id="comparisonView" style="display: none;">
+        <!-- Stacked Gantt Charts Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title" id="compGanttHeading">Comparative Gantt Charts</h2>
+          </div>
+          <div class="comparison-gantts">
+            <div class="comparison-gantt-block">
+              <h3 class="comparison-subtitle" id="labelCompA">Time Quantum = 2 ms</h3>
+              <div class="gantt-scroll-container">
+                <div class="gantt-chart" id="compGanttChartA"></div>
+              </div>
+            </div>
+
+            <div class="comparison-gantt-block">
+              <h3 class="comparison-subtitle" id="labelCompB">Time Quantum = 3 ms</h3>
+              <div class="gantt-scroll-container">
+                <div class="gantt-chart" id="compGanttChartB"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Comparison Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title" id="compTableHeading">Time Quantum Comparison Table</h2>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="comparisonTable">
+              <thead>
+                <tr>
+                  <th>Performance Metric</th>
+                  <th id="thCompColA">TQ = 2 ms</th>
+                  <th id="thCompColB">TQ = 3 ms</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonTableBody">
+                <!-- Populated via script.js -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
+  </div>
 
-    <section class="results panel" id="results" aria-labelledby="results-heading" hidden>
-      <h2 class="results-heading" id="results-heading">Scheduling Results</h2>
-
-      <div class="summary-grid" aria-label="Schedule summary">
-        <article class="summary-card summary-processes">
-          <span class="summary-label">Total Processes</span>
-          <strong id="total-processes">—</strong>
-        </article>
-        <article class="summary-card summary-execution">
-          <span class="summary-label">Total Execution Time</span>
-          <strong id="total-execution-time">—</strong>
-        </article>
-        <article class="summary-card summary-tat">
-          <span class="summary-label">Average Turnaround Time</span>
-          <strong id="average-tat">—</strong>
-        </article>
-        <article class="summary-card summary-wt">
-          <span class="summary-label">Average Waiting Time</span>
-          <strong id="average-wt">—</strong>
-        </article>
-      </div>
-
-      <section class="timeline-section" aria-labelledby="gantt-heading">
-        <div class="section-heading">
-          <h3 id="gantt-heading">Gantt Chart</h3>
-          <div id="gantt-legend" class="gantt-legend" aria-label="Process color legend"></div>
-        </div>
-        <div class="gantt-scroll" tabindex="0" aria-label="Scrollable CPU execution timeline">
-          <div class="gantt-chart" id="gantt-chart"></div>
-        </div>
-      </section>
-
-      <div class="results-tables">
-        <section class="table-section" aria-labelledby="process-results-heading">
-          <h3 id="process-results-heading">Process Details</h3>
-          <div class="table-wrap">
-            <table class="results-table process-results-table">
-              <thead>
-                <tr>
-                  <th scope="col">Process</th>
-                  <th scope="col">AT</th>
-                  <th scope="col">BT</th>
-                  <th scope="col">CT</th>
-                  <th scope="col">TAT</th>
-                  <th scope="col">WT</th>
-                </tr>
-              </thead>
-              <tbody id="process-results"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="table-section" aria-labelledby="workflow-heading">
-          <h3 id="workflow-heading">Execution Workflow</h3>
-          <div class="table-wrap">
-            <table class="results-table workflow-table">
-              <thead>
-                <tr>
-                  <th scope="col">Step</th>
-                  <th scope="col">Process</th>
-                  <th scope="col">Start Time</th>
-                  <th scope="col">End Time</th>
-                  <th scope="col">Duration</th>
-                  <th scope="col">Remaining BT</th>
-                </tr>
-              </thead>
-              <tbody id="workflow-results"></tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <footer class="page-footer">Round Robin CPU Scheduling Visualizer · Operating Systems Lab</footer>
-  </main>
+  <script src="script.js"></script>
 </body>
 </html>
