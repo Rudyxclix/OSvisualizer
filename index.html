@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="An interactive Round Robin CPU scheduling visualizer for operating systems students.">
+  <title>Round Robin CPU Scheduling Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <p class="eyebrow">OPERATING SYSTEMS · CPU SCHEDULING</p>
+      <h1>Round Robin CPU Scheduling Visualizer</h1>
+      <p class="intro">See how the ready queue shares the CPU, one time quantum at a time. Add processes, choose a time quantum, and generate a schedule.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="input-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">GET STARTED</p>
+          <h2 id="input-heading">Process inputs</h2>
+        </div>
+        <button class="button button-secondary" id="load-example" type="button">Load example</button>
+      </div>
+
+      <p class="helper-text">Add each process with its arrival and burst times. The time quantum applies to every process.</p>
+
+      <div class="input-grid">
+        <label>
+          Arrival Time (AT)
+          <input id="arrival-time" type="number" min="0" step="any" placeholder="e.g. 0" inputmode="decimal">
+        </label>
+        <label>
+          Burst Time (BT)
+          <input id="burst-time" type="number" min="0" step="any" placeholder="e.g. 5" inputmode="decimal">
+        </label>
+        <button class="button button-secondary add-button" id="add-process" type="button">Add process</button>
+      </div>
+
+      <div class="quantum-row">
+        <label for="time-quantum">Time Quantum (TQ)</label>
+        <input id="time-quantum" type="number" min="0" step="any" placeholder="e.g. 2" inputmode="decimal">
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Process ID</th>
+              <th scope="col">Arrival Time (AT)</th>
+              <th scope="col">Burst Time (BT)</th>
+              <th scope="col"><span class="visually-hidden">Action</span></th>
+            </tr>
+          </thead>
+          <tbody id="process-list">
+            <tr class="empty-row">
+              <td colspan="4">No processes added yet. Add a process or load the example.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-actions">
+        <p class="message" id="form-message" role="status" aria-live="polite"></p>
+        <button class="button button-primary" id="generate-schedule" type="button">Generate schedule</button>
+      </div>
+    </section>
+
+    <section class="results" id="results" aria-labelledby="results-heading" hidden>
+      <div class="section-heading results-heading">
+        <div>
+          <p class="eyebrow">SIMULATION RESULTS</p>
+          <h2 id="results-heading">Schedule overview</h2>
+        </div>
+      </div>
+
+      <div class="summary-grid" aria-label="Average scheduling times">
+        <article class="summary-card">
+          <span>Average Turnaround Time</span>
+          <strong id="average-tat">—</strong>
+          <small>time units</small>
+        </article>
+        <article class="summary-card">
+          <span>Average Waiting Time</span>
+          <strong id="average-wt">—</strong>
+          <small>time units</small>
+        </article>
+      </div>
+
+      <section class="panel result-panel" aria-labelledby="process-results-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">PER-PROCESS METRICS</p>
+            <h3 id="process-results-heading">Process details</h3>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Process</th>
+                <th scope="col">Arrival Time (AT)</th>
+                <th scope="col">Burst Time (BT)</th>
+                <th scope="col">Completion Time (CT)</th>
+                <th scope="col">Turnaround Time (TAT)</th>
+                <th scope="col">Waiting Time (WT)</th>
+              </tr>
+            </thead>
+            <tbody id="process-results"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel result-panel" aria-labelledby="workflow-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CPU TIME SLICES</p>
+            <h3 id="workflow-heading">Execution workflow</h3>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Process</th>
+                <th scope="col">Start Time</th>
+                <th scope="col">End Time</th>
+                <th scope="col">Execution Duration</th>
+                <th scope="col">Remaining Burst Time</th>
+              </tr>
+            </thead>
+            <tbody id="workflow-results"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel result-panel" aria-labelledby="gantt-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">EXECUTION TIMELINE</p>
+            <h3 id="gantt-heading">Gantt chart</h3>
+          </div>
+        </div>
+        <div class="gantt-scroll" tabindex="0" aria-label="Scrollable Gantt chart">
+          <div class="gantt-chart" id="gantt-chart"></div>
+        </div>
+        <p class="chart-note">Each block is one CPU turn; block widths are proportional to execution time.</p>
+      </section>
+    </section>
+
+    <footer class="page-footer">Round Robin is a preemptive scheduling algorithm: each ready process gets a turn of at most one time quantum.</footer>
+  </main>
+</body>
+</html>
